@@ -1,0 +1,39 @@
+﻿name: A股分析
+on:
+  schedule:
+    - cron: "30 0 * * *"
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run analysis
+        env:
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+          TZ: Asia/Shanghai
+        run: |
+          HOUR=$(date +%H)
+          if [ "$HOUR" = "08" ]; then
+            python a_stock_analysis.py morning
+          elif [ "$HOUR" = "15" ]; then
+            python a_stock_analysis.py evening
+          else
+            echo "Skip: not scheduled time"
+          fi
+      - name: Save data
+        run: |
+          git config user.name "A股 Bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add recommendations.json
+          git diff --quiet && git diff --staged --quiet || {
+            git commit -m "update data $(date +%Y-%m-%d)"
+            git push
+          }

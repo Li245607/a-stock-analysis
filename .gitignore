@@ -1,0 +1,7 @@
+﻿__pycache__/
+*.pyc
+.env
+*.toml
+test_*.py
+fix_*.py
+check_*.py
